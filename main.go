@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	flag "github.com/spf13/pflag"
 )
@@ -65,12 +66,15 @@ func main() {
 		return
 	}
 
-	c := exec.Command(cmd[0], cmd[1:]...)
-
-	c.Stdout = os.Stdout
-	c.Stderr = os.Stderr
-
-	if err := c.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to clone: %s", err)
+	if err := execute(cmd); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to exec command: %s\n", err)
 	}
+}
+
+func execute(cmd []string) error {
+	binary, err := exec.LookPath(cmd[0])
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(binary, cmd, os.Environ())
 }
