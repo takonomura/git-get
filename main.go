@@ -21,19 +21,24 @@ func init() {
 	flag.BoolVar(&dryRun, "dry-run", false, "Dry run")
 }
 
+func absPath(p string) string {
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(os.Getenv("HOME"), p)
+	}
+	return p
+}
+
 func getGitPath() string {
-	p := os.Getenv("GITPATH")
-	if p != "" {
-		return p
+	if p := os.Getenv("GITPATH"); p != "" {
+		return absPath(p)
 	}
-	p = os.Getenv("GOPATH")
-	if p == "" {
-		p = os.Getenv("HOME")
+	if p := os.Getenv("GOPATH"); p != "" {
+		return absPath(filepath.Join(p, "src"))
 	}
-	if p == "" {
-		return p
+	if p := os.Getenv("HOME"); p != "" {
+		return filepath.Join(p, "src")
 	}
-	return filepath.Join(p, "src")
+	return ""
 }
 
 func main() {
