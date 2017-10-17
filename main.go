@@ -25,7 +25,11 @@ func init() {
 
 	flag.BoolVarP(&list, "list", "l", false, "List repositories")
 	flag.BoolVarP(&fullPath, "path", "p", false, "Print full path")
+
+	flag.Parse()
 }
+
+var gitPath = getGitPath()
 
 func absPath(p string) string {
 	if !filepath.IsAbs(p) {
@@ -47,16 +51,16 @@ func getGitPath() string {
 	return ""
 }
 
-func printList(gitPath string, fullPath bool) error {
-	gitPath = filepath.Clean(gitPath) + string(filepath.Separator)
+func printListAll() error {
+	gitPath := filepath.Clean(gitPath) + string(filepath.Separator)
 	return filepath.Walk(gitPath, func(path string, info os.FileInfo, err error) error {
+		rel := strings.TrimPrefix(path, gitPath)
 		if _, err := os.Stat(filepath.Join(path, ".git")); err != nil {
-			if len(strings.Split(path, string(filepath.Separator))) >= 3 {
+			if len(strings.Split(rel, string(filepath.Separator))) >= 3 {
 				return filepath.SkipDir
 			}
 			return nil
 		}
-		rel := strings.TrimPrefix(path, gitPath)
 		if fullPath {
 			fmt.Println(path)
 		} else {
@@ -66,17 +70,34 @@ func printList(gitPath string, fullPath bool) error {
 	})
 }
 
-func main() {
-	flag.Parse()
+func execute(cmd []string) error {
+	binary, err := exec.LookPath(cmd[0])
+	if err != nil {
+		return err
+	}
+	return syscall.Exec(binary, cmd, os.Environ())
+}
 
-	gitPath := getGitPath()
+func clone(repo RepoInfo) error {
+	cmd := repo.CloneCmd(gitPath)
+
+	fmt.Println("$ " + strings.Join(cmd, " "))
+
+	if dryRun {
+		return nil
+	}
+
+	return execute(cmd)
+}
+
+func main() {
 	if gitPath == "" {
 		fmt.Fprintln(os.Stderr, "Please set $GITPATH")
 		os.Exit(1)
 	}
 
 	if list {
-		err := printList(gitPath, fullPath)
+		err := printListAll()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to find repositories: %s", err)
 			os.Exit(1)
@@ -99,22 +120,7 @@ func main() {
 		repo.Branch = branch
 	}
 
-	cmd := repo.CloneCmd(gitPath)
-
-	if dryRun {
-		fmt.Println("$ " + strings.Join(cmd, " "))
-		return
+	if err := clone(repo); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to clone the repository: %s\n", err)
 	}
-
-	if err := execute(cmd); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to exec command: %s\n", err)
-	}
-}
-
-func execute(cmd []string) error {
-	binary, err := exec.LookPath(cmd[0])
-	if err != nil {
-		return err
-	}
-	return syscall.Exec(binary, cmd, os.Environ())
 }
