@@ -36,6 +36,18 @@ func TestMatch(t *testing.T) {
 			url:     "https://github.com/takonomura/git-get.git",
 		},
 		{
+			input:   "https://github.com/takonomura/git-get/",
+			matched: true,
+			path:    "github.com/takonomura/git-get",
+			url:     "https://github.com/takonomura/git-get.git",
+		},
+		{
+			input:   "https://github.com/takonomura/git-get.git/",
+			matched: true,
+			path:    "github.com/takonomura/git-get",
+			url:     "https://github.com/takonomura/git-get.git",
+		},
+		{
 			input:   "takonomura",
 			matched: false,
 		},

@@ -23,7 +23,7 @@ func RegexpPattern(pattern string, parser func([]string) RepoInfo) Pattern {
 }
 
 var Patterns = []Pattern{
-	RegexpPattern(`^(?:(?:https://)?([a-zA-Z0-9-.]+)/)?([a-zA-Z0-9-_.]+)/([a-zA-Z0-9-_.]+?)(?:\.git)?$`, func(parts []string) RepoInfo {
+	RegexpPattern(`^(?:(?:https://)?([a-zA-Z0-9-.]+)/)?([a-zA-Z0-9-_.]+)/([a-zA-Z0-9-_.]+?)(?:\.git)?/?$`, func(parts []string) RepoInfo {
 		if parts[1] == "" {
 			parts[1] = "github.com"
 		}
