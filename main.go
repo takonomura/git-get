@@ -14,11 +14,17 @@ import (
 var (
 	branch string
 	dryRun bool
+
+	list     bool
+	fullPath bool
 )
 
 func init() {
 	flag.StringVarP(&branch, "branch", "b", "", "Branch to clone")
 	flag.BoolVar(&dryRun, "dry-run", false, "Dry run")
+
+	flag.BoolVarP(&list, "list", "l", false, "List repositories")
+	flag.BoolVarP(&fullPath, "path", "p", false, "Print full path")
 }
 
 func absPath(p string) string {
@@ -41,16 +47,45 @@ func getGitPath() string {
 	return ""
 }
 
+func printList(gitPath string, fullPath bool) error {
+	gitPath = filepath.Clean(gitPath) + string(filepath.Separator)
+	return filepath.Walk(gitPath, func(path string, info os.FileInfo, err error) error {
+		if _, err := os.Stat(filepath.Join(path, ".git")); err != nil {
+			if len(strings.Split(path, string(filepath.Separator))) >= 3 {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		rel := strings.TrimPrefix(path, gitPath)
+		if fullPath {
+			fmt.Println(path)
+		} else {
+			fmt.Println(rel)
+		}
+		return filepath.SkipDir
+	})
+}
+
 func main() {
 	flag.Parse()
-	if len(flag.Args()) != 1 {
-		fmt.Fprintf(os.Stderr, "Usage: %s [-b branch] [--dry-run] repo\n", os.Args[0])
-		os.Exit(1)
-	}
 
 	gitPath := getGitPath()
 	if gitPath == "" {
 		fmt.Fprintln(os.Stderr, "Please set $GITPATH")
+		os.Exit(1)
+	}
+
+	if list {
+		err := printList(gitPath, fullPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to find repositories: %s", err)
+			os.Exit(1)
+		}
+		return
+	}
+
+	if len(flag.Args()) != 1 {
+		fmt.Fprintf(os.Stderr, "Usage: %s [-b branch] [--dry-run] repo\n", os.Args[0])
 		os.Exit(1)
 	}
 
