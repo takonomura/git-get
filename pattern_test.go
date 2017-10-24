@@ -55,6 +55,24 @@ func TestMatch(t *testing.T) {
 			input:   "https://takonomura/git-get",
 			matched: false,
 		},
+		{
+			input:   "ssh://git@github.com:takonomura/git-get.git",
+			matched: true,
+			path:    "github.com/takonomura/git-get",
+			url:     "ssh://git@github.com:takonomura/git-get.git",
+		},
+		{
+			input:   "git@github.com:takonomura/git-get.git",
+			matched: true,
+			path:    "github.com/takonomura/git-get",
+			url:     "ssh://git@github.com:takonomura/git-get.git",
+		},
+		{
+			input:   "github.com:takonomura/git-get.git",
+			matched: true,
+			path:    "github.com/takonomura/git-get",
+			url:     "ssh://github.com:takonomura/git-get.git",
+		},
 	}
 
 	for _, test := range tests {
