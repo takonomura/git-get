@@ -99,7 +99,7 @@ func main() {
 	if list {
 		err := printListAll()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to find repositories: %s", err)
+			fmt.Fprintf(os.Stderr, "Failed to find repositories: %s\n", err)
 			os.Exit(1)
 		}
 		return
