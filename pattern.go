@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -35,11 +36,12 @@ var Patterns = []Pattern{
 	RegexpPattern(`^(?:ssh://)?(?:([a-z0-9_]+)@)?([a-zA-Z0-9-.]+):([a-zA-Z0-9-_./]+?).git$`, func(parts []string) RepoInfo {
 		path := filepath.FromSlash(parts[3])
 		path = filepath.Join(parts[2], path)
-		url := parts[2] + ":" + parts[3] + ".git"
-		if parts[1] != "" {
-			url = parts[1] + "@" + url
+		var url string
+		if parts[1] == "" {
+			url = fmt.Sprintf("ssh://%s:%s.git", parts[2], parts[3])
+		} else {
+			url = fmt.Sprintf("ssh://%s@%s:%s.git", parts[1], parts[2], parts[3])
 		}
-		url = "ssh://" + url
 		return RepoInfo{
 			Path: path,
 			URL:  url,
@@ -53,5 +55,5 @@ func Match(s string) (matched bool, repo RepoInfo) {
 			return matched, repo
 		}
 	}
-	return false, repo
+	return
 }
