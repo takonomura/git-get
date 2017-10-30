@@ -16,6 +16,8 @@ var (
 	branch string
 	dryRun bool
 
+	root bool
+
 	list     bool
 	fullPath bool
 )
@@ -24,6 +26,8 @@ func init() {
 	flag.IntVarP(&level, "level", "L", 3, "Descend only level directories deep")
 	flag.StringVarP(&branch, "branch", "b", "", "Branch to clone")
 	flag.BoolVar(&dryRun, "dry-run", false, "Dry run")
+
+	flag.BoolVar(&root, "root", false, "Print $GITPATH")
 
 	flag.BoolVarP(&list, "list", "l", false, "List repositories")
 	flag.BoolVarP(&fullPath, "path", "p", false, "Print full path")
@@ -96,6 +100,11 @@ func main() {
 	if gitPath == "" {
 		fmt.Fprintln(os.Stderr, "Please set $GITPATH")
 		os.Exit(1)
+	}
+
+	if root {
+		fmt.Println(gitPath)
+		return
 	}
 
 	if list {
