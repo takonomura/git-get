@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	level  int
 	branch string
 	dryRun bool
 
@@ -20,6 +21,7 @@ var (
 )
 
 func init() {
+	flag.IntVarP(&level, "level", "L", 3, "Descend only level directories deep")
 	flag.StringVarP(&branch, "branch", "b", "", "Branch to clone")
 	flag.BoolVar(&dryRun, "dry-run", false, "Dry run")
 
@@ -56,7 +58,7 @@ func printListAll() error {
 	return filepath.Walk(gitPath, func(path string, info os.FileInfo, err error) error {
 		rel := strings.TrimPrefix(path, gitPath)
 		if _, err := os.Stat(filepath.Join(path, ".git")); err != nil {
-			if len(strings.Split(rel, string(filepath.Separator))) >= 3 {
+			if len(strings.Split(rel, string(filepath.Separator))) >= level {
 				return filepath.SkipDir
 			}
 			return nil
