@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"text/template"
 
 	flag "github.com/spf13/pflag"
 )
@@ -14,23 +15,24 @@ import (
 var (
 	level  int
 	branch string
-	dryRun bool
 
-	root bool
+	root  bool
+	print bool
+	list  bool
 
-	list     bool
-	fullPath bool
+	outputString string
+	output       *template.Template
 )
 
 func init() {
 	flag.IntVarP(&level, "level", "L", 3, "Descend only level directories deep")
 	flag.StringVarP(&branch, "branch", "b", "", "Branch to clone")
-	flag.BoolVar(&dryRun, "dry-run", false, "Dry run")
 
 	flag.BoolVar(&root, "root", false, "Print $GITPATH")
-
 	flag.BoolVarP(&list, "list", "l", false, "List repositories")
-	flag.BoolVarP(&fullPath, "path", "p", false, "Print full path")
+	flag.BoolVarP(&print, "print", "p", false, "Print")
+
+	flag.StringVarP(&outputString, "output", "o", "", "Output template")
 
 	flag.Parse()
 }
@@ -57,6 +59,34 @@ func getGitPath() string {
 	return ""
 }
 
+func parseOutput() error {
+	if outputString == "" {
+		switch {
+		case list:
+			outputString = `{{ . }}`
+		case print:
+			outputString = `{{ join (.CloneCmd root) " " }}`
+		default:
+			outputString = `$ {{ join (.CloneCmd root) " " }}`
+		}
+	}
+	outputString += "\n"
+
+	var err error
+	output, err = template.New("output").Funcs(template.FuncMap{
+		"join":         strings.Join,
+		"filepath":     filepath.FromSlash,
+		"filepathJoin": filepath.Join,
+		"root": func() string {
+			return gitPath
+		},
+		"abs": func(s string) string {
+			return filepath.Join(gitPath, filepath.FromSlash(s))
+		},
+	}).Parse(outputString)
+	return err
+}
+
 func printListAll() error {
 	gitPath := filepath.Clean(gitPath) + string(filepath.Separator)
 	return filepath.Walk(gitPath, func(path string, info os.FileInfo, err error) error {
@@ -67,11 +97,7 @@ func printListAll() error {
 			}
 			return nil
 		}
-		if fullPath {
-			fmt.Println(path)
-		} else {
-			fmt.Println(rel)
-		}
+		output.Execute(os.Stdout, rel)
 		return filepath.SkipDir
 	})
 }
@@ -86,19 +112,17 @@ func execute(cmd []string) error {
 
 func clone(repo RepoInfo) error {
 	cmd := repo.CloneCmd(gitPath)
-
-	fmt.Println("$ " + strings.Join(cmd, " "))
-
-	if dryRun {
-		return nil
-	}
-
 	return execute(cmd)
 }
 
 func main() {
 	if gitPath == "" {
 		fmt.Fprintln(os.Stderr, "Please set $GITPATH")
+		os.Exit(1)
+	}
+
+	if err := parseOutput(); err != nil {
+		fmt.Fprintln(os.Stderr, "Invalid output template")
 		os.Exit(1)
 	}
 
@@ -129,6 +153,11 @@ func main() {
 
 	if branch != "" {
 		repo.Branch = branch
+	}
+
+	output.Execute(os.Stdout, repo)
+	if print {
+		return
 	}
 
 	if err := clone(repo); err != nil {
