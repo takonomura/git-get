@@ -141,7 +141,9 @@ func main() {
 	}
 
 	if len(flag.Args()) != 1 {
-		fmt.Fprintf(os.Stderr, "Usage: %s [-b branch] [--dry-run] repo\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [--print] [-b branch] repo\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "       %s --root\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "       %s --list\n", os.Args[0])
 		os.Exit(1)
 	}
 
