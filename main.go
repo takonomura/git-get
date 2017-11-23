@@ -90,15 +90,27 @@ func parseOutput() error {
 func printListAll() error {
 	gitPath := filepath.Clean(gitPath) + string(filepath.Separator)
 	return filepath.Walk(gitPath, func(path string, info os.FileInfo, err error) error {
-		rel := strings.TrimPrefix(path, gitPath)
-		if _, err := os.Stat(filepath.Join(path, ".git")); err != nil {
-			if len(strings.Split(rel, string(filepath.Separator))) >= level {
-				return filepath.SkipDir
-			}
-			return nil
+		if err != nil || !info.IsDir() {
+			return err
 		}
-		output.Execute(os.Stdout, rel)
-		return filepath.SkipDir
+
+		rel := strings.TrimPrefix(path, gitPath)
+
+		_, err = os.Stat(filepath.Join(path, ".git"))
+		if err == nil {
+			output.Execute(os.Stdout, rel)
+			return filepath.SkipDir
+		}
+
+		if !os.IsNotExist(err) {
+			return err
+		}
+
+		l := len(strings.Split(rel, string(filepath.Separator)))
+		if l >= level {
+			return filepath.SkipDir
+		}
+		return nil
 	})
 }
 
